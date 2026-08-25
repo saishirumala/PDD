@@ -12,9 +12,16 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
-  build-deploy-and-test:
+  build-and-deploy-pages:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     env:
       BASE_URL: https://saishirumala.github.io/PDD
     steps:
@@ -37,22 +44,20 @@ jobs:
           npm install
           npm run build
 
-      - name: Deploy Application to GitHub Pages
+      - name: Publish to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./frontend/dist
 
-      - name: Verify Live Deployment URL
-        run: |
-          echo "Verifying live deployment at $BASE_URL..."
-          max_attempts=12
-          attempt=1
-          until curl -s -f -I "$BASE_URL" > /dev/null || [ $attempt -eq $max_attempts ]; do
-            echo "Attempt $attempt/$max_attempts: Waiting for $BASE_URL to return HTTP 200..."
-            sleep 10
-            attempt=$((attempt+1))
-          done
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./frontend/dist
+
+      - name: Deploy Native GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: Install Selenium & Test Dependencies
         run: |
