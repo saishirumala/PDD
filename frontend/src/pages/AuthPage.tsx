@@ -176,6 +176,22 @@ const AuthPage: React.FC = () => {
             )}
           </button>
 
+          {/* Instant Demo Access Button */}
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await login("healthy.eater@example.com", "Password123!");
+                navigate('/dashboard');
+              } catch (e) {
+                console.error("Demo login error:", e);
+              }
+            }}
+            className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+          >
+            ⚡ Quick Demo Access (Instant Sign In)
+          </button>
+
         </form>
 
         {/* Footer switch links */}

@@ -85,9 +85,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userResponse = await api.get<User>('/api/auth/me');
       setUser(userResponse.data);
     } catch (error: any) {
-      // Fallback for demo/offline mode on static hosts like GitHub Pages
-      if (!error.response || error.code === 'ERR_NETWORK') {
-        console.log("Using local offline login fallback.");
+      // Fallback for demo/offline mode on static hosts like GitHub Pages (where API returns 404)
+      if (!error.response || error.response.status === 404 || error.code === 'ERR_NETWORK') {
+        console.log("Using local offline/demo login fallback.");
         const fakeToken = "demo_token_" + Date.now();
         localStorage.setItem('token', fakeToken);
         setToken(fakeToken);
@@ -116,8 +116,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       await login(email, password);
     } catch (error: any) {
-      if (!error.response || error.code === 'ERR_NETWORK') {
-        console.log("Using local offline registration fallback.");
+      if (!error.response || error.response.status === 404 || error.code === 'ERR_NETWORK') {
+        console.log("Using local offline/demo registration fallback.");
         const mockUser: User = {
           id: 1,
           name: name.trim(),
