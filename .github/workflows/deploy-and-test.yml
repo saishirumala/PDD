@@ -1,0 +1,87 @@
+name: Build, Deploy to GitHub Pages & Run Live Selenium E2E Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-deploy-and-test:
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: https://saishirumala.github.io/PDD
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Build Frontend Application
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Deploy Application to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./frontend/dist
+
+      - name: Verify Live Deployment URL
+        run: |
+          echo "Verifying live deployment at $BASE_URL..."
+          max_attempts=12
+          attempt=1
+          until curl -s -f -I "$BASE_URL" > /dev/null || [ $attempt -eq $max_attempts ]; do
+            echo "Attempt $attempt/$max_attempts: Waiting for $BASE_URL to return HTTP 200..."
+            sleep 10
+            attempt=$((attempt+1))
+          done
+
+      - name: Install Selenium & Test Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r web_tests/requirements.txt
+
+      - name: Run Live Selenium E2E Tests Against GitHub Pages
+        run: |
+          PYTHONPATH=web_tests pytest web_tests/test_live_selenium_e2e.py || true
+
+      - name: Generate Reports
+        run: |
+          python web_tests/generate_web_reports.py
+
+      - name: Upload Test Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Live-Selenium-Test-Results
+          path: |
+            Test Results/Excel/Automation_Test_Report.xlsx
+            Test Results/HTML/execution-report.html
+            Test Results/Screenshots/
+            Test Results/Logs/
+            Test Results/Summary/summary.md
+
+      - name: Publish GitHub Step Summary
+        if: always()
+        run: |
+          if [ -f "Test Results/Summary/summary.md" ]; then
+            cat "Test Results/Summary/summary.md" >> $GITHUB_STEP_SUMMARY
+          fi

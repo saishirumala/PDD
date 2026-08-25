@@ -1,15 +1,13 @@
-# Android Appium Test Summary 📱
+# Live GitHub Pages E2E Test Summary 🌐
 
-**Build Number:** #1  
-**Execution Date:** 2026-08-25 22:39:50  
+**Deployment URL:**  
+https://saishirumala.github.io/PDD
 
-### 📊 Metric Breakdown
+### 📊 Results Breakdown
 - **Total Tests:** 4
 - **Passed:** 4
 - **Failed:** 0
-- **Pass Rate:** **100.0%**
+- **Skipped:** 0
+- **Pass Percentage:** **100.0%**
 
 ---
-
-### 🌐 Live Report URL
-🔗 **[View Interactive GitHub Pages HTML Report](https://saishirumala.github.io/PDD/reports/latest/execution-report.html)**
