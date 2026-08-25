@@ -12,16 +12,9 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
-  build-and-deploy-pages:
+  build-deploy-and-test:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     env:
       BASE_URL: https://saishirumala.github.io/PDD
     steps:
@@ -44,20 +37,11 @@ jobs:
           npm install
           npm run build
 
-      - name: Publish to gh-pages branch
+      - name: Publish Application to GitHub Pages Branch
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./frontend/dist
-
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./frontend/dist
-
-      - name: Deploy Native GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
 
       - name: Install Selenium & Test Dependencies
         run: |
