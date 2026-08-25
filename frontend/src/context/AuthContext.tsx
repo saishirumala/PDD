@@ -26,6 +26,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Helper to create mock user
+  const getMockUser = (emailVal: string, nameVal?: string): User => {
+    const savedUser = localStorage.getItem('mock_user_data');
+    if (savedUser) {
+      try {
+        return JSON.parse(savedUser);
+      } catch (e) {}
+    }
+    const defaultUser: User = {
+      id: 1,
+      name: nameVal || emailVal.split('@')[0] || "Healthy Eater",
+      email: emailVal,
+      calorie_goal: 2000,
+      protein_goal: 150,
+      carbs_goal: 225,
+      fat_goal: 65,
+      fiber_goal: 30,
+      created_at: new Date().toISOString()
+    };
+    localStorage.setItem('mock_user_data', JSON.stringify(defaultUser));
+    return defaultUser;
+  };
+
   // Initialize and check for existing token on mount
   useEffect(() => {
     const initAuth = async () => {
@@ -36,16 +59,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const response = await api.get<User>('/api/auth/me');
           setUser(response.data);
         } catch (error) {
-          console.error("Session token validation failed:", error);
-          localStorage.removeItem('token');
-          setToken(null);
-          setUser(null);
+          // If backend isn't running or network error, fallback to stored local user
+          console.warn("Backend unavailable, using local session fallback.");
+          const mockUser = getMockUser("user@example.com");
+          setUser(mockUser);
         }
       }
       setLoading(false);
     };
     initAuth();
-  }, [token]);
+  }, []);
 
   // Login handler
   const login = async (email: string, password: string) => {
@@ -59,10 +82,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('token', jwtToken);
       setToken(jwtToken);
       
-      // Fetch user profile immediately
       const userResponse = await api.get<User>('/api/auth/me');
       setUser(userResponse.data);
-    } catch (error) {
+    } catch (error: any) {
+      // Fallback for demo/offline mode on static hosts like GitHub Pages
+      if (!error.response || error.code === 'ERR_NETWORK') {
+        console.log("Using local offline login fallback.");
+        const fakeToken = "demo_token_" + Date.now();
+        localStorage.setItem('token', fakeToken);
+        setToken(fakeToken);
+        const mockUser = getMockUser(email);
+        setUser(mockUser);
+        setLoading(false);
+        return;
+      }
       localStorage.removeItem('token');
       setToken(null);
       setUser(null);
@@ -76,16 +109,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (name: string, email: string, password: string) => {
     setLoading(true);
     try {
-      // Create user account
       await api.post<User>('/api/auth/register', {
         name,
         email,
         password,
       });
-      
-      // Log in immediately after successful sign up
       await login(email, password);
-    } catch (error) {
+    } catch (error: any) {
+      if (!error.response || error.code === 'ERR_NETWORK') {
+        console.log("Using local offline registration fallback.");
+        const mockUser: User = {
+          id: 1,
+          name: name.trim(),
+          email: email.trim(),
+          calorie_goal: 2000,
+          protein_goal: 150,
+          carbs_goal: 225,
+          fat_goal: 65,
+          fiber_goal: 30,
+          created_at: new Date().toISOString()
+        };
+        localStorage.setItem('mock_user_data', JSON.stringify(mockUser));
+        const fakeToken = "demo_token_" + Date.now();
+        localStorage.setItem('token', fakeToken);
+        setToken(fakeToken);
+        setUser(mockUser);
+        setLoading(false);
+        return;
+      }
       setLoading(false);
       throw error;
     }
