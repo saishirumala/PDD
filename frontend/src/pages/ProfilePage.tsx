@@ -230,6 +230,123 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
 
+            {/* BMR & TDEE Goal Calculator Helper */}
+            <div className="p-5 bg-gradient-to-br from-brand-50/50 to-blue-50/50 border border-brand-100/60 rounded-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-brand-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Heart className="h-4 w-4 text-brand-500" />
+                  Calorie & Macro Calculator (BMR / TDEE)
+                </h4>
+              </div>
+              <p className="text-xs text-slate-500">
+                Not sure about your targets? Calculate your Total Daily Energy Expenditure (TDEE) based on your body metrics.
+              </p>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div>
+                  <label className="font-semibold text-slate-600 block mb-1">Gender</label>
+                  <select 
+                    id="calc-gender"
+                    defaultValue="male"
+                    className="w-full p-2 bg-white border border-slate-200 rounded-xl outline-none"
+                  >
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-600 block mb-1">Age (yrs)</label>
+                  <input 
+                    id="calc-age"
+                    type="number" 
+                    defaultValue="25" 
+                    className="w-full p-2 bg-white border border-slate-200 rounded-xl outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-600 block mb-1">Weight (kg)</label>
+                  <input 
+                    id="calc-weight"
+                    type="number" 
+                    defaultValue="70" 
+                    className="w-full p-2 bg-white border border-slate-200 rounded-xl outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-600 block mb-1">Height (cm)</label>
+                  <input 
+                    id="calc-height"
+                    type="number" 
+                    defaultValue="175" 
+                    className="w-full p-2 bg-white border border-slate-200 rounded-xl outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="font-semibold text-slate-600 block mb-1">Activity Level</label>
+                  <select 
+                    id="calc-activity"
+                    defaultValue="1.375"
+                    className="w-full p-2 bg-white border border-slate-200 rounded-xl outline-none"
+                  >
+                    <option value="1.2">Sedentary (Little/no exercise)</option>
+                    <option value="1.375">Light (1-3 days/week)</option>
+                    <option value="1.55">Moderate (3-5 days/week)</option>
+                    <option value="1.725">Very Active (6-7 days/week)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-600 block mb-1">Primary Goal</label>
+                  <select 
+                    id="calc-goal"
+                    defaultValue="maintain"
+                    className="w-full p-2 bg-white border border-slate-200 rounded-xl outline-none"
+                  >
+                    <option value="lose">Weight Loss (-500 kcal)</option>
+                    <option value="maintain">Weight Maintenance</option>
+                    <option value="gain">Muscle Gain (+300 kcal)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const gender = (document.getElementById('calc-gender') as HTMLSelectElement).value;
+                  const age = parseFloat((document.getElementById('calc-age') as HTMLInputElement).value) || 25;
+                  const weight = parseFloat((document.getElementById('calc-weight') as HTMLInputElement).value) || 70;
+                  const height = parseFloat((document.getElementById('calc-height') as HTMLInputElement).value) || 175;
+                  const activity = parseFloat((document.getElementById('calc-activity') as HTMLSelectElement).value) || 1.375;
+                  const goal = (document.getElementById('calc-goal') as HTMLSelectElement).value;
+
+                  // Mifflin-St Jeor BMR Equation
+                  let bmr = (10 * weight) + (6.25 * height) - (5 * age);
+                  bmr += gender === 'male' ? 5 : -161;
+
+                  let tdee = bmr * activity;
+                  if (goal === 'lose') tdee -= 500;
+                  if (goal === 'gain') tdee += 300;
+
+                  const targetCalories = Math.round(tdee);
+                  // Standard Macro Split (30% Protein, 40% Carbs, 30% Fat)
+                  const targetProtein = Math.round((targetCalories * 0.30) / 4);
+                  const targetCarbs = Math.round((targetCalories * 0.40) / 4);
+                  const targetFat = Math.round((targetCalories * 0.30) / 9);
+
+                  setCalorieGoal(targetCalories.toString());
+                  setProteinGoal(targetProtein.toString());
+                  setCarbsGoal(targetCarbs.toString());
+                  setFatGoal(targetFat.toString());
+                  setFiberGoal("30");
+                }}
+                className="w-full py-2 bg-white hover:bg-brand-50 text-brand-600 font-bold border border-brand-200 rounded-xl text-xs transition-colors shadow-sm"
+              >
+                ⚡ Calculate & Apply Recommended Goals
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={saving}
