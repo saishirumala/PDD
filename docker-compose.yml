@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: nutriguide-db
+    restart: always
+    environment:
+      POSTGRES_DB: nutriguide
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nutriguide"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: nutriguide-api
+    restart: always
+    environment:
+      - PORT=8000
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/nutriguide
+      - SECRET_KEY=prod_docker_secret_key_change_me_in_real_production
+      - AI_PROVIDER=gemini
+      - AI_API_KEY=
+      - ALLOWED_ORIGINS=http://localhost,http://localhost:80,http://localhost:5173
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: nutriguide-web
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  backend_uploads:

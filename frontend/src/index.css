@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 selection:bg-brand-100 selection:text-brand-800 min-h-screen flex flex-col;
+  }
+  
+  /* Focus outline settings for accessibility */
+  button:focus-visible, 
+  a:focus-visible, 
+  input:focus-visible, 
+  textarea:focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2;
+  }
+}
+
+@layer components {
+  /* Premium glassmorphic containers */
+  .glass-card {
+    @apply bg-white/75 backdrop-blur-md border border-white/40 shadow-glass transition-all duration-300 hover:shadow-glass-hover;
+  }
+  
+  .glass-card-dark {
+    @apply bg-slate-900/80 backdrop-blur-md border border-slate-800/60 shadow-xl;
+  }
+  
+  /* Form input custom styles */
+  .form-input {
+    @apply w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:border-brand-500 focus:bg-white transition-all duration-200 outline-none;
+  }
+  
+  /* Button premium hover effects */
+  .btn-primary {
+    @apply px-5 py-2.5 bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2;
+  }
+  
+  .btn-secondary {
+    @apply px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-medium rounded-xl border border-slate-200 shadow-sm transition-all duration-200 flex items-center justify-center gap-2;
+  }
+  
+  .btn-danger {
+    @apply px-5 py-2.5 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 hover:bg-slate-300 rounded-full;
+}
+
+/* Water tracker wave animation */
+@keyframes wave-spin {
+  from {
+    transform: translate(-50%, -90%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -90%) rotate(360deg);
+  }
+}
+
+.animate-wave {
+  animation: wave-spin 6s linear infinite;
+}
+
+.animate-wave-slow {
+  animation: wave-spin 10s linear infinite;
+}
