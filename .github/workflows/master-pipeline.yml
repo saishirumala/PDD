@@ -1,0 +1,90 @@
+name: NutriGuide Master CI/CD Pipeline (Build, Test & Deploy)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "master-pipeline"
+  cancel-in-progress: false
+
+jobs:
+  build-test-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: https://saishirumala.github.io/PDD
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python Test Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r mobile_tests/requirements.txt
+          pip install -r web_tests/requirements.txt
+
+      - name: Run Backend Pytest Suite
+        run: |
+          pytest backend/tests/ -v
+
+      - name: Run Master 105 Unique Test Cases Suite
+        run: |
+          python tests_master/generate_100_test_report.py
+          pytest tests_master/test_suite_100_plus.py -v
+
+      - name: Build Frontend Application
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Deploy Frontend App to GitHub Pages Branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./frontend/dist
+          keep_files: true
+
+      - name: Install Appium & Run Mobile Reports
+        run: |
+          npm install -g appium || true
+          python mobile_tests/generate_reports.py
+          python android_appium_tests/generate_android_excel_report.py
+          python web_tests/generate_web_reports.py
+
+      - name: Upload Test Results Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Complete-NutriGuide-Test-Results
+          path: |
+            Test Results/Excel/
+            Test Results/HTML/
+            Test Results/Screenshots/
+            Test Results/Logs/
+            Test Results/Summary/
+
+      - name: Publish GitHub Step Summary
+        if: always()
+        run: |
+          if [ -f Test Results/Summary/summary_105.md ]; then
+            cat Test Results/Summary/summary_105.md >> $GITHUB_STEP_SUMMARY
+          fi
