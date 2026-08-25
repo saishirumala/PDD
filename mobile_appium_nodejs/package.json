@@ -1,0 +1,29 @@
+{
+  "name": "nutriguide-mobile-appium-nodejs",
+  "version": "1.0.0",
+  "description": "Node.js WebdriverIO Appium Mobile E2E Automation Framework & Excel Analysis Generator",
+  "main": "wdio.conf.js",
+  "scripts": {
+    "test:mobile": "wdio run wdio.conf.js",
+    "report:excel": "node generate_excel_report.js",
+    "test:all": "npm run test:mobile || node generate_excel_report.js"
+  },
+  "keywords": [
+    "appium",
+    "webdriverio",
+    "nodejs",
+    "mobile-automation",
+    "android",
+    "exceljs"
+  ],
+  "author": "NutriGuide QA Team",
+  "license": "MIT",
+  "dependencies": {
+    "@wdio/cli": "^8.38.0",
+    "@wdio/local-runner": "^8.38.0",
+    "@wdio/mocha-framework": "^8.38.0",
+    "@wdio/spec-reporter": "^8.38.0",
+    "appium": "^2.11.0",
+    "exceljs": "^4.4.0"
+  }
+}
