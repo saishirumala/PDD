@@ -75,7 +75,8 @@ async def analyze_meal_endpoint(
         ai_result = await ai_provider.analyze_meal(
             description=description,
             image_data=image_data,
-            mime_type=mime_type
+            mime_type=mime_type,
+            filename=image.filename if image else None
         )
     except Exception as e:
         logger.error(f"AI Provider analysis failed: {str(e)}")
@@ -88,17 +89,35 @@ async def analyze_meal_endpoint(
         )
 
     # 4. Refine Health Score using our transparent scoring algorithm
-    calculated_score = calculate_health_score(
-        calories=ai_result.nutrition.calories,
-        protein=ai_result.nutrition.protein,
-        carbohydrates=ai_result.nutrition.carbohydrates,
-        fat=ai_result.nutrition.fat,
-        fiber=ai_result.nutrition.fiber,
-        sugar=ai_result.nutrition.sugar,
-        sodium=ai_result.nutrition.sodium
+    # If the item is non-food or unrecognized, it must NOT receive a health score.
+    meal_name_lower = (ai_result.meal_name or "").lower()
+    is_non_food = (
+        ai_result.health_score == 0 or
+        (ai_result.nutrition.calories <= 0 and 
+         ai_result.nutrition.protein <= 0 and 
+         ai_result.nutrition.carbohydrates <= 0 and 
+         ai_result.nutrition.fat <= 0) or
+        "non-food" in meal_name_lower or
+        "unrecognized" in meal_name_lower or
+        "not a food" in meal_name_lower
     )
-    # Blend AI score and calculated score or rely on calculated score to enforce rules
-    final_health_score = int((ai_result.health_score + calculated_score) / 2)
+
+    if is_non_food:
+        final_health_score = 0
+    else:
+        calculated_score = calculate_health_score(
+            calories=ai_result.nutrition.calories,
+            protein=ai_result.nutrition.protein,
+            carbohydrates=ai_result.nutrition.carbohydrates,
+            fat=ai_result.nutrition.fat,
+            fiber=ai_result.nutrition.fiber,
+            sugar=ai_result.nutrition.sugar,
+            sodium=ai_result.nutrition.sodium
+        )
+        if calculated_score == 0:
+            final_health_score = 0
+        else:
+            final_health_score = int((ai_result.health_score + calculated_score) / 2)
 
     # 5. Persist to PostgreSQL database
     try:

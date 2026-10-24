@@ -9,15 +9,13 @@ def calculate_health_score(
 ) -> int:
     """
     Calculates a transparent, rule-based nutritional health score between 10 and 100.
-    
-    Factors considered:
-    - Protein density (positive)
-    - Fiber content (positive)
-    - Sugar level (negative)
-    - Sodium density (negative)
-    - Balance of macronutrients
+    Returns 0 for non-food items with no macronutrients.
     """
-    # Start with a base score of 70
+    # Non-food or empty meal: no health score applies
+    if calories <= 0 and protein <= 0 and carbohydrates <= 0 and fat <= 0:
+        return 0
+
+    # Start with a base score of 70 for legitimate foods
     score = 70
     
     # 1. Protein Bonus (target: > 15% of calories or general high intake)

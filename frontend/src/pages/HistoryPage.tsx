@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { Meal } from '../types';
+import { formatDate } from '../utils/date';
 import { 
   Search, 
   Trash2, 
@@ -66,14 +67,7 @@ const HistoryPage: React.FC = () => {
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch {
-      return "";
-    }
-  };
+
 
   if (loading && meals.length === 0) {
     return (
@@ -166,10 +160,19 @@ const HistoryPage: React.FC = () => {
                 {/* Health score badge on image */}
                 {meal.insight && (
                   <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-black shadow-sm flex items-center gap-1.5 border border-white/50">
-                    <span className={`w-2 h-2 rounded-full ${
-                      meal.insight.health_score >= 80 ? 'bg-emerald-500' : meal.insight.health_score >= 50 ? 'bg-amber-400' : 'bg-red-500'
-                    }`} />
-                    Score {meal.insight.health_score}
+                    {meal.insight.health_score > 0 ? (
+                      <>
+                        <span className={`w-2 h-2 rounded-full ${
+                          meal.insight.health_score >= 80 ? 'bg-emerald-500' : meal.insight.health_score >= 50 ? 'bg-amber-400' : 'bg-red-500'
+                        }`} />
+                        Score {meal.insight.health_score}
+                      </>
+                    ) : (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-slate-400" />
+                        <span className="text-slate-600">Non-Food</span>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

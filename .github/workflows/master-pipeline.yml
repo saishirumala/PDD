@@ -85,6 +85,6 @@ jobs:
       - name: Publish GitHub Step Summary
         if: always()
         run: |
-          if [ -f Test Results/Summary/summary_105.md ]; then
-            cat Test Results/Summary/summary_105.md >> $GITHUB_STEP_SUMMARY
+          if [ -f "Test Results/Summary/summary_105.md" ]; then
+            cat "Test Results/Summary/summary_105.md" >> "$GITHUB_STEP_SUMMARY"
           fi

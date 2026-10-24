@@ -51,6 +51,21 @@ def test_login_invalid_credentials(client):
     assert "Incorrect email" in response.json()["detail"]
 
 
+def test_login_wrong_password(client):
+    # Register first
+    client.post(
+        "/api/auth/register",
+        json={"name": "Bob Wrong", "email": "bob_wrong_pass@example.com", "password": "correct_pass"}
+    )
+    # Login with wrong password
+    response = client.post(
+        "/api/auth/login",
+        json={"email": "bob_wrong_pass@example.com", "password": "wrong_password"}
+    )
+    assert response.status_code == 401
+    assert "wrong" in response.json()["detail"].lower()
+
+
 def test_read_user_me(client, auth_headers):
     response = client.get("/api/auth/me", headers=auth_headers)
     assert response.status_code == 200

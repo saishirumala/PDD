@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { DashboardTodayResponse, DashboardSummaryResponse, Meal, WaterSummaryResponse } from '../types';
+import { formatTime } from '../utils/date';
 import { 
   BarChart, 
   Bar, 
@@ -185,15 +186,7 @@ const DashboardPage: React.FC = () => {
     { name: 'Fiber', current: today.fiber, goal: today.fiber_goal, unit: 'g', color: 'bg-emerald-500', barColor: '#10b981' },
   ];
 
-  // Formatting local time
-  const formatTime = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return "00:00";
-    }
-  };
+
 
   return (
     <div className="space-y-8 animate-fadeIn">

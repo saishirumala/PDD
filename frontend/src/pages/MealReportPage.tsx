@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { Meal } from '../types';
+import { formatTime, formatLongDate as formatDate } from '../utils/date';
 import { 
   BarChart, 
   Bar, 
@@ -90,24 +91,7 @@ const MealReportPage: React.FC = () => {
     );
   }
 
-  // Formatting date/time
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    } catch {
-      return "Date unknown";
-    }
-  };
 
-  const formatTime = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return "";
-    }
-  };
 
   // Setup macronutrients chart data
   // Convert grams to calories to show proportions (optional) or just represent grams directly.
@@ -120,7 +104,15 @@ const MealReportPage: React.FC = () => {
   ];
 
   // Helper for health score color
+  const isNonFood = 
+    meal.insight.health_score === 0 || 
+    (meal.nutrition.calories === 0 && meal.nutrition.protein === 0 && meal.nutrition.carbohydrates === 0 && meal.nutrition.fat === 0) ||
+    meal.meal_name.toLowerCase().includes('non-food') ||
+    meal.meal_name.toLowerCase().includes('unrecognized') ||
+    meal.meal_name.toLowerCase().includes('not a food');
+
   const getScoreColor = (score: number) => {
+    if (isNonFood) return { text: 'text-slate-700', bg: 'bg-slate-50', border: 'border-slate-200', fill: '#94a3b8' };
     if (score >= 80) return { text: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', fill: '#10b981' };
     if (score >= 50) return { text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', fill: '#f59e0b' };
     return { text: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', fill: '#ef4444' };
@@ -191,32 +183,52 @@ const MealReportPage: React.FC = () => {
             {/* Health score and summary */}
             <div className={`p-6 border ${scoreTheme.border} ${scoreTheme.bg} rounded-2xl flex flex-col sm:flex-row items-center gap-6`}>
               
-              {/* Circular Gauge */}
-              <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle cx="48" cy="48" r="40" className="stroke-slate-200/50 fill-transparent" strokeWidth="8" />
-                  <circle 
-                    cx="48" 
-                    cy="48" 
-                    r="40" 
-                    className="transition-all duration-1000" 
-                    stroke={scoreTheme.fill}
-                    fill="transparent" 
-                    strokeWidth="8" 
-                    strokeDasharray={251.2}
-                    strokeDashoffset={251.2 - (251.2 * meal.insight.health_score) / 100}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute text-center">
-                  <span className={`text-2xl font-black ${scoreTheme.text}`}>{meal.insight.health_score}</span>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Score</p>
+              {isNonFood ? (
+                /* Non-food informative badge (NO score gauge) */
+                <div className="shrink-0 flex flex-col items-center justify-center p-3.5 bg-white border border-slate-200 rounded-2xl shadow-sm min-w-[100px] text-center">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-1 text-slate-500">
+                    <AlertCircle className="h-6 w-6 text-slate-500" />
+                  </div>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-slate-600">No Score</span>
+                  <span className="text-[9px] font-bold text-slate-400">Non-Food</span>
                 </div>
-              </div>
+              ) : (
+                /* Circular Gauge */
+                <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle cx="48" cy="48" r="40" className="stroke-slate-200/50 fill-transparent" strokeWidth="8" />
+                    <circle 
+                      cx="48" 
+                      cy="48" 
+                      r="40" 
+                      className="transition-all duration-1000" 
+                      stroke={scoreTheme.fill}
+                      fill="transparent" 
+                      strokeWidth="8" 
+                      strokeDasharray={251.2}
+                      strokeDashoffset={251.2 - (251.2 * meal.insight.health_score) / 100}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute text-center">
+                    <span className={`text-2xl font-black ${scoreTheme.text}`}>{meal.insight.health_score}</span>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Score</p>
+                  </div>
+                </div>
+              )}
 
               {/* Summary text */}
-              <div className="space-y-1.5 text-center sm:text-left">
-                <h4 className={`font-bold text-base ${scoreTheme.text}`}>AI Nutrition Summary</h4>
+              <div className="space-y-1.5 text-center sm:text-left flex-1">
+                <div className="flex items-center justify-center sm:justify-start gap-2">
+                  <h4 className={`font-bold text-base ${isNonFood ? 'text-slate-800' : scoreTheme.text}`}>
+                    AI Nutrition Summary
+                  </h4>
+                  {isNonFood && (
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700">
+                      Non-Food Detected
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
                   {meal.insight.summary}
                 </p>

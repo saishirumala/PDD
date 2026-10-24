@@ -1,6 +1,14 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_serializer
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
+
+def serialize_utc_datetime(dt: Optional[datetime]) -> Optional[str]:
+    """Serializes a datetime into ISO8601 UTC with 'Z' suffix so browsers parse it as UTC."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat().replace("+00:00", "Z")
 
 # --- Token Schemas ---
 class Token(BaseModel):
@@ -25,6 +33,10 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+    new_password: str = Field(..., min_length=6, description="New account password (min 6 characters)")
+
 class UserGoalUpdate(BaseModel):
     name: Optional[str] = None
     calorie_goal: Optional[int] = Field(None, ge=500, le=10000)
@@ -42,8 +54,11 @@ class UserResponse(UserBase):
     fiber_goal: float
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("created_at", check_fields=False)
+    def serialize_created_at(self, dt: Optional[datetime]) -> Optional[str]:
+        return serialize_utc_datetime(dt)
 
 
 # --- Food Schemas ---
@@ -62,8 +77,7 @@ class FoodResponse(FoodBase):
     id: int
     meal_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Nutrition Schemas ---
@@ -83,8 +97,7 @@ class NutritionResponse(NutritionBase):
     id: int
     meal_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Micronutrient Schemas ---
@@ -105,8 +118,7 @@ class MicronutrientResponse(MicronutrientBase):
     id: int
     meal_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- MealInsight Schemas ---
@@ -122,8 +134,7 @@ class MealInsightResponse(MealInsightBase):
     id: int
     meal_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Meal Schemas ---
@@ -151,8 +162,11 @@ class MealResponse(MealBase):
     foods: List[FoodResponse] = []
     insight: Optional[MealInsightResponse] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("analyzed_at", "created_at", check_fields=False)
+    def serialize_meal_datetimes(self, dt: Optional[datetime]) -> Optional[str]:
+        return serialize_utc_datetime(dt)
 
 
 # --- AI Nutrition Raw Analysis Schema ---
@@ -224,8 +238,11 @@ class WaterLogResponse(BaseModel):
     amount_ml: int
     logged_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("logged_at", check_fields=False)
+    def serialize_logged_at(self, dt: Optional[datetime]) -> Optional[str]:
+        return serialize_utc_datetime(dt)
 
 class WaterSummaryResponse(BaseModel):
     total_ml: int

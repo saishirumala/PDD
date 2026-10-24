@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
-from datetime import datetime, time, timedelta
+from sqlalchemy.orm import Session, joinedload
+from datetime import datetime, time, timedelta, timezone
 from typing import List, Dict, Any
 
 from app.database import get_db
@@ -16,14 +16,17 @@ def get_dashboard_today(
     current_user: User = Depends(get_current_user)
 ):
     # Calculate start and end of today in UTC
-    now = datetime.utcnow()
-    # Let's align with user's local day. For database, UTC is safe, but we can also use general date.
-    # To be safe, we capture meals created since midnight UTC today.
+    now = datetime.now(timezone.utc)
     today_start = datetime.combine(now.date(), time.min)
     today_end = datetime.combine(now.date(), time.max)
 
-    # Query all meals created today
-    meals_today = db.query(Meal).filter(
+    # Query all meals created today with relations loaded
+    meals_today = db.query(Meal).options(
+        joinedload(Meal.nutrition),
+        joinedload(Meal.micronutrients),
+        joinedload(Meal.foods),
+        joinedload(Meal.insight)
+    ).filter(
         Meal.user_id == current_user.id,
         Meal.created_at >= today_start,
         Meal.created_at <= today_end
@@ -36,7 +39,7 @@ def get_dashboard_today(
     total_fat = 0.0
     total_fiber = 0.0
 
-    scores_sum = 0
+    valid_scores = []
     meals_count = len(meals_today)
 
     for meal in meals_today:
@@ -46,10 +49,10 @@ def get_dashboard_today(
             total_carbohydrates += meal.nutrition.carbohydrates
             total_fat += meal.nutrition.fat
             total_fiber += meal.nutrition.fiber
-        if meal.insight:
-            scores_sum += meal.insight.health_score
+        if meal.insight and meal.insight.health_score > 0:
+            valid_scores.append(meal.insight.health_score)
 
-    average_score = float(scores_sum / meals_count) if meals_count > 0 else 0.0
+    average_score = float(sum(valid_scores) / len(valid_scores)) if len(valid_scores) > 0 else 0.0
 
     summary_obj = DailyNutritionSummary(
         calories=total_calories,
@@ -78,11 +81,13 @@ def get_dashboard_summary(
     current_user: User = Depends(get_current_user)
 ):
     # Provide weekly/monthly aggregate statistics for charts
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     seven_days_ago = now - timedelta(days=7)
 
     # Get meals from past 7 days
-    meals_week = db.query(Meal).filter(
+    meals_week = db.query(Meal).options(
+        joinedload(Meal.nutrition)
+    ).filter(
         Meal.user_id == current_user.id,
         Meal.created_at >= seven_days_ago
     ).order_by(Meal.created_at.asc()).all()
@@ -119,10 +124,10 @@ def get_dashboard_summary(
     # General totals
     total_meals_analyzed = db.query(Meal).filter(Meal.user_id == current_user.id).count()
     
-    # Calculate average health score of all time
-    all_meals = db.query(Meal).filter(Meal.user_id == current_user.id).all()
-    all_time_score_sum = sum(m.insight.health_score for m in all_meals if m.insight)
-    all_time_avg_score = float(all_time_score_sum / len(all_meals)) if len(all_meals) > 0 else 0.0
+    # Calculate average health score of all time (excluding non-food records)
+    all_meals = db.query(Meal).options(joinedload(Meal.insight)).filter(Meal.user_id == current_user.id).all()
+    insights = [m.insight.health_score for m in all_meals if m.insight and m.insight.health_score > 0]
+    all_time_avg_score = float(sum(insights) / len(insights)) if len(insights) > 0 else 0.0
 
     return {
         "weekly_chart": weekly_chart_data,

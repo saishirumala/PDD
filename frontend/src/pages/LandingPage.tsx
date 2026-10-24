@@ -98,7 +98,7 @@ const LandingPage: React.FC = () => {
 
               <button className="btn-primary w-full justify-center opacity-90 cursor-default">
                 <BrainCircuit className="h-5 w-5" />
-                Analyze Plate (Demo)
+                Analyze Plate Preview
               </button>
             </div>
 

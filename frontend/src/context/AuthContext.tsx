@@ -26,29 +26,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Helper to create mock user
-  const getMockUser = (emailVal: string, nameVal?: string): User => {
-    const savedUser = localStorage.getItem('mock_user_data');
-    if (savedUser) {
-      try {
-        return JSON.parse(savedUser);
-      } catch (e) {}
-    }
-    const defaultUser: User = {
-      id: 1,
-      name: nameVal || emailVal.split('@')[0] || "Healthy Eater",
-      email: emailVal,
-      calorie_goal: 2000,
-      protein_goal: 150,
-      carbs_goal: 225,
-      fat_goal: 65,
-      fiber_goal: 30,
-      created_at: new Date().toISOString()
-    };
-    localStorage.setItem('mock_user_data', JSON.stringify(defaultUser));
-    return defaultUser;
-  };
-
   // Initialize and check for existing token on mount
   useEffect(() => {
     const initAuth = async () => {
@@ -59,10 +36,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const response = await api.get<User>('/api/auth/me');
           setUser(response.data);
         } catch (error) {
-          // If backend isn't running or network error, fallback to stored local user
-          console.warn("Backend unavailable, using local session fallback.");
-          const mockUser = getMockUser("user@example.com");
-          setUser(mockUser);
+          // Token is expired, invalid, or server unreachable - clean session
+          localStorage.removeItem('token');
+          setToken(null);
+          setUser(null);
         }
       }
       setLoading(false);
@@ -72,10 +49,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Login handler
   const login = async (email: string, password: string) => {
-    setLoading(true);
+    const cleanEmail = email.trim().toLowerCase();
     try {
       const response = await api.post<{ access_token: string; token_type: string }>('/api/auth/login', {
-        email,
+        email: cleanEmail,
         password,
       });
       const jwtToken = response.data.access_token;
@@ -85,61 +62,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userResponse = await api.get<User>('/api/auth/me');
       setUser(userResponse.data);
     } catch (error: any) {
-      // Fallback for demo/offline mode on static hosts like GitHub Pages (where API returns 404)
-      if (!error.response || error.response.status === 404 || error.code === 'ERR_NETWORK') {
-        console.log("Using local offline/demo login fallback.");
-        const fakeToken = "demo_token_" + Date.now();
-        localStorage.setItem('token', fakeToken);
-        setToken(fakeToken);
-        const mockUser = getMockUser(email);
-        setUser(mockUser);
-        setLoading(false);
-        return;
-      }
       localStorage.removeItem('token');
       setToken(null);
       setUser(null);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
   // Register handler
   const register = async (name: string, email: string, password: string) => {
-    setLoading(true);
-    try {
-      await api.post<User>('/api/auth/register', {
-        name,
-        email,
-        password,
-      });
-      await login(email, password);
-    } catch (error: any) {
-      if (!error.response || error.response.status === 404 || error.code === 'ERR_NETWORK') {
-        console.log("Using local offline/demo registration fallback.");
-        const mockUser: User = {
-          id: 1,
-          name: name.trim(),
-          email: email.trim(),
-          calorie_goal: 2000,
-          protein_goal: 150,
-          carbs_goal: 225,
-          fat_goal: 65,
-          fiber_goal: 30,
-          created_at: new Date().toISOString()
-        };
-        localStorage.setItem('mock_user_data', JSON.stringify(mockUser));
-        const fakeToken = "demo_token_" + Date.now();
-        localStorage.setItem('token', fakeToken);
-        setToken(fakeToken);
-        setUser(mockUser);
-        setLoading(false);
-        return;
-      }
-      setLoading(false);
-      throw error;
-    }
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+
+    await api.post<User>('/api/auth/register', {
+      name: cleanName,
+      email: cleanEmail,
+      password,
+    });
+    await login(cleanEmail, password);
   };
 
   // Logout handler

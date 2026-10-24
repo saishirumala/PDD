@@ -15,6 +15,12 @@
     "jsx": "react-jsx",
     "types": ["vite/client"],
 
+    /* Path resolution */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": false,

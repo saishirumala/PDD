@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 from typing import List
 
 from app.database import get_db
@@ -40,7 +40,7 @@ def get_water_today(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     today_start = datetime.combine(now.date(), time.min)
     today_end = datetime.combine(now.date(), time.max)
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 
 from app.database import get_db
@@ -16,7 +16,12 @@ def get_user_meals(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    query = db.query(Meal).filter(Meal.user_id == current_user.id)
+    query = db.query(Meal).options(
+        joinedload(Meal.nutrition),
+        joinedload(Meal.micronutrients),
+        joinedload(Meal.foods),
+        joinedload(Meal.insight)
+    ).filter(Meal.user_id == current_user.id)
     
     if search:
         search_filter = f"%{search}%"
@@ -36,7 +41,12 @@ def get_meal_details(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    meal = db.query(Meal).filter(Meal.id == meal_id).first()
+    meal = db.query(Meal).options(
+        joinedload(Meal.nutrition),
+        joinedload(Meal.micronutrients),
+        joinedload(Meal.foods),
+        joinedload(Meal.insight)
+    ).filter(Meal.id == meal_id).first()
     
     if not meal:
         raise HTTPException(

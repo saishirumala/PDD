@@ -1,5 +1,5 @@
 from app.models import WaterLog, User
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 def test_log_water_success(client, auth_headers, db):
     # Log 250ml
@@ -51,8 +51,9 @@ def test_get_water_today_with_logs(client, auth_headers, db):
     user = db.query(User).filter(User.email == "testuser@example.com").first()
 
     # Create logs: one today, one yesterday
-    log_today = WaterLog(user_id=user.id, amount_ml=500, logged_at=datetime.utcnow())
-    log_yesterday = WaterLog(user_id=user.id, amount_ml=750, logged_at=datetime.utcnow() - timedelta(days=1))
+    now = datetime.now(timezone.utc)
+    log_today = WaterLog(user_id=user.id, amount_ml=500, logged_at=now)
+    log_yesterday = WaterLog(user_id=user.id, amount_ml=750, logged_at=now - timedelta(days=1))
 
     db.add_all([log_today, log_yesterday])
     db.commit()

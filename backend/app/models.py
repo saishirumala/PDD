@@ -1,7 +1,11 @@
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 class User(Base):
     __tablename__ = "users"
@@ -15,8 +19,8 @@ class User(Base):
     carbs_goal = Column(Float, default=225.0)   # grams
     fat_goal = Column(Float, default=65.0)     # grams
     fiber_goal = Column(Float, default=30.0)   # grams
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), default=utc_now)
 
     meals = relationship("Meal", back_populates="user", cascade="all, delete-orphan")
     water_logs = relationship("WaterLog", back_populates="user", cascade="all, delete-orphan")
@@ -30,8 +34,8 @@ class Meal(Base):
     meal_name = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     image_url = Column(String(500), nullable=True)
-    analyzed_at = Column(DateTime(timezone=True), server_default=func.now())
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    analyzed_at = Column(DateTime(timezone=True), server_default=func.now(), default=utc_now)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=utc_now)
 
     user = relationship("User", back_populates="meals")
     nutrition = relationship("Nutrition", back_populates="meal", uselist=False, cascade="all, delete-orphan")
@@ -96,7 +100,7 @@ class MealInsight(Base):
     health_score = Column(Integer, nullable=False)
     summary = Column(Text, nullable=False)
     recommendations = Column(JSON, nullable=False) # Store lists of recommendations
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=utc_now)
 
     meal = relationship("Meal", back_populates="insight")
 
@@ -107,6 +111,6 @@ class WaterLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     amount_ml = Column(Integer, nullable=False)
-    logged_at = Column(DateTime(timezone=True), server_default=func.now())
+    logged_at = Column(DateTime(timezone=True), server_default=func.now(), default=utc_now)
 
     user = relationship("User", back_populates="water_logs")

@@ -28,3 +28,10 @@ Thumbs.db
 *.swp
 *.db
 backend/*.db
+*.exe
+.expo/
+mobile/.expo/
+.agents/
+*/.agents/
+skills-lock.json
+*/skills-lock.json

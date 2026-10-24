@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { formatDate } from '../utils/date';
 import { 
   User as UserIcon, 
   Target, 
@@ -15,11 +16,23 @@ const ProfilePage: React.FC = () => {
   const { user, updateGoals } = useAuth();
   
   const [name, setName] = useState(user?.name || '');
-  const [calorieGoal, setCalorieGoal] = useState(user?.calorie_goal.toString() || '2000');
-  const [proteinGoal, setProteinGoal] = useState(user?.protein_goal.toString() || '150');
-  const [carbsGoal, setCarbsGoal] = useState(user?.carbs_goal.toString() || '225');
-  const [fatGoal, setFatGoal] = useState(user?.fat_goal.toString() || '65');
-  const [fiberGoal, setFiberGoal] = useState(user?.fiber_goal.toString() || '30');
+  const [calorieGoal, setCalorieGoal] = useState(user?.calorie_goal != null ? String(user.calorie_goal) : '2000');
+  const [proteinGoal, setProteinGoal] = useState(user?.protein_goal != null ? String(user.protein_goal) : '150');
+  const [carbsGoal, setCarbsGoal] = useState(user?.carbs_goal != null ? String(user.carbs_goal) : '225');
+  const [fatGoal, setFatGoal] = useState(user?.fat_goal != null ? String(user.fat_goal) : '65');
+  const [fiberGoal, setFiberGoal] = useState(user?.fiber_goal != null ? String(user.fiber_goal) : '30');
+
+  // Synchronize form fields whenever user profile data finishes loading
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setCalorieGoal(user.calorie_goal != null ? String(user.calorie_goal) : '2000');
+      setProteinGoal(user.protein_goal != null ? String(user.protein_goal) : '150');
+      setCarbsGoal(user.carbs_goal != null ? String(user.carbs_goal) : '225');
+      setFatGoal(user.fat_goal != null ? String(user.fat_goal) : '65');
+      setFiberGoal(user.fiber_goal != null ? String(user.fiber_goal) : '30');
+    }
+  }, [user]);
   
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,15 +84,7 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "";
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString([], { dateStyle: 'long' });
-    } catch {
-      return "";
-    }
-  };
+
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">

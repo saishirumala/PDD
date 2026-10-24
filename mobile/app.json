@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "NutriGuide",
+    "slug": "nutriguide-mobile",
+    "version": "1.0.0",
+    "sdkVersion": "58.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#10b981"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.nutriguide.mobile"
+    }
+  }
+}

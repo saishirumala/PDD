@@ -1,25 +1,35 @@
+import logging
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 from app.config import settings
 
-# If using SQLite for fallback, check scheme. 
-# But for PostgreSQL, we configure standard connection.
-# We can add a fallback to SQLite if postgres is not available during quick tests, 
-# e.g., sqlite:///./nutriguide.db to make tests run easily if no postgres is running yet.
-# Let's support both: if DATABASE_URL starts with postgresql, we might need to handle the driver.
-db_url = settings.DATABASE_URL
+logger = logging.getLogger("nutriguide.database")
+
+db_url = settings.effective_db_url
+
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-# Connect args check (sqlite needs check_same_thread=False)
 connect_args = {}
+engine_kwargs = {}
+
 if db_url.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
+elif db_url.startswith("postgresql"):
+    # Supabase PostgreSQL configuration
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_recycle"] = 300
 
-engine = create_engine(db_url, connect_args=connect_args)
+try:
+    engine = create_engine(db_url, connect_args=connect_args, **engine_kwargs)
+except Exception as e:
+    logger.error(f"Failed to initialize database engine for {db_url}: {e}")
+    # Fallback to local SQLite if primary connection fails
+    fallback_url = "sqlite:///./nutriguide.db"
+    logger.info(f"Falling back to local database: {fallback_url}")
+    engine = create_engine(fallback_url, connect_args={"check_same_thread": False})
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 Base = declarative_base()
 
 def get_db():
@@ -28,3 +38,4 @@ def get_db():
         yield db
     finally:
         db.close()
+
