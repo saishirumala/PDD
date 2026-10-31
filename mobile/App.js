@@ -13,7 +13,8 @@ import {
   StatusBar,
   Platform,
   RefreshControl,
-  Dimensions
+  Dimensions,
+  NativeModules
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
@@ -21,9 +22,22 @@ import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 
-// Automatically connect to our running backend.
-// Uses local Wi-Fi IP and falls back to live Cloudflare tunnel for mobile data.
-const API_URL = 'http://192.168.29.149:8000/api';
+// Automatically detect host IP from Expo Metro bundler so it works on any Wi-Fi
+const getApiBaseUrl = () => {
+  try {
+    const scriptURL = NativeModules?.SourceCode?.scriptURL;
+    if (scriptURL) {
+      const address = scriptURL.split('://')[1]?.split('/')[0];
+      const host = address?.split(':')[0];
+      if (host && host !== 'localhost' && host !== '127.0.0.1') {
+        return `http://${host}:8000/api`;
+      }
+    }
+  } catch (e) {}
+  return 'http://10.50.251.137:8000/api';
+};
+
+const API_URL = getApiBaseUrl();
 const FALLBACK_API_URL = 'https://fever-situations-dozen-consultancy.trycloudflare.com/api';
 
 const api = axios.create({
@@ -31,9 +45,13 @@ const api = axios.create({
   timeout: 30000,
 });
 
-// Attach JWT token automatically
+// Attach JWT token automatically and ensure baseURL uses current host IP
 api.interceptors.request.use(async (config) => {
   try {
+    const dynamicBase = getApiBaseUrl();
+    if (dynamicBase) {
+      config.baseURL = dynamicBase;
+    }
     const token = await AsyncStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
